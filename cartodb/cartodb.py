@@ -65,7 +65,9 @@ class CartoDB(object):
         # Get Access Token
         access_token_url = ACCESS_TOKEN_URL % {'user': cartodb_domain}
         resp, token = client.request(access_token_url, method="POST", body=urllib.urlencode(params))
-        access_token = dict(urlparse.parse_qsl(token))
+        if resp['status'] == '401':
+            raise Exception("CartoDB username or password invalid: access denied.")
+        access_token = dict(urlparse.parse_qsl(token, False, True))
         token = oauth.Token(access_token['oauth_token'], access_token['oauth_token_secret'])
 
         # prepare client
