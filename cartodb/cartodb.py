@@ -36,10 +36,11 @@ except ImportError:
 
 from oauth2 import Request
 
-REQUEST_TOKEN_URL = 'https://%(user)s.cartodb.com/oauth/request_token'
-ACCESS_TOKEN_URL = 'https://%(user)s.cartodb.com/oauth/access_token'
-AUTHORIZATION_URL = 'https://%(user)s.cartodb.com/oauth/authorize'
-RESOURCE_URL = 'https://%(user)s.cartodb.com/api/v1/sql'
+REQUEST_TOKEN_URL = '%(domain)s/oauth/request_token'
+ACCESS_TOKEN_URL = '%(domain)s/oauth/access_token'
+AUTHORIZATION_URL = '%(domain)s/oauth/authorize'
+# RESOURCE_URL = '%(domain)s/api/v1/sql'
+RESOURCE_URL = '%(domain)s/api/v1/queries'
 
 
 class CartoDBException(Exception):
@@ -48,7 +49,7 @@ class CartoDBException(Exception):
 class CartoDB(object):
     """ basic client to access cartodb api """
 
-    def __init__(self, key, secret, email, password, cartodb_domain):
+    def __init__(self, key, secret, email, password, cartodb_domain, domain=None):
 
         self.consumer_key = key
         self.consumer_secret = secret
@@ -62,23 +63,34 @@ class CartoDB(object):
         params["x_auth_password"] = password
         params["x_auth_mode"] = 'client_auth'
 
+        # Set the server domains for the URLs
+        if domain is None:
+            # If no domain specified, use the user's account name
+            # on CartoDB itself.
+            domain = 'https://%s.cartodb.com' % (cartodb_domain)
+
+        self.request_token_url = REQUEST_TOKEN_URL % {'domain': domain}
+        self.access_token_url = ACCESS_TOKEN_URL % {'domain': domain}
+        self.authorization_url = AUTHORIZATION_URL % {'domain': domain}
+        self.resource_url = RESOURCE_URL % {'domain': domain}
+
         # Get Access Token
-        access_token_url = ACCESS_TOKEN_URL % {'user': cartodb_domain}
-        resp, token = client.request(access_token_url, method="POST", body=urllib.urlencode(params))
+        # print "Connecting to '%s'" % self.access_token_url
+        resp, token = client.request(self.access_token_url, method="POST", body=urllib.urlencode(params))
         if resp['status'] == '401':
             raise CartoDBException("CartoDB username or password invalid: access denied.")
         access_token = dict(urlparse.parse_qsl(token, False, True))
         token = oauth.Token(access_token['oauth_token'], access_token['oauth_token_secret'])
 
         # prepare client
-        self.resource_url = RESOURCE_URL % {'user': cartodb_domain}
         self.client = oauth.Client(consumer, token)
 
 
-    def req(self, url, http_method="GET", http_headers=None):
+    def req(self, url, body="", http_method="GET", http_headers=None):
         """ make an autorized request """
         resp, content = self.client.request(
             url,
+            body=body,
             method=http_method,
             headers=http_headers
         )
@@ -88,15 +100,22 @@ class CartoDB(object):
         """ executes sql in cartodb server
             set parse_json to False if you want raw reponse
         """
-        p = urllib.urlencode({'q': sql})
-        url = self.resource_url + '?' + p
-        resp, content = self.req(url);
+        p = urllib.urlencode({'sql': sql})
+        url = self.resource_url
+        print "Making a request for '%s'" % url
+        resp, content = self.req(url, body=p);
+        print "Response: %s, content: %s" % (resp, content)
         if resp['status'] == '200':
             if parse_json:
                 return json.loads(content)
             return content
         elif resp['status'] == '400':
-            raise CartoDBException(json.loads(content)['error'])
+            json = json.loads(content)
+            if 'error' in json:
+                raise CartoDBException(json['error'])
+            if 'errors' in json:
+                raise CartoDBException(json['errors'])
+            raise CartoDBException(json)
         elif resp['status'] == '500':
             raise CartoDBException('internal server error')
 
