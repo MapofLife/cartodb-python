@@ -75,14 +75,30 @@ class CartoDB(object):
         self.client = oauth.Client(consumer, token)
 
 
-    def req(self, url, http_method="GET", http_headers=None):
+    def req(self, url, http_headers=None):
         """ make an autorized request """
         resp, content = self.client.request(
             url,
-            method=http_method,
+            method="GET",
             headers=http_headers
         )
         return resp, content
+
+    def post_req(self, url, query, http_headers=None):
+        http_headers = {'Content-type': 'application/x-www-form-urlencoded'}
+
+        print "Making a POST request"
+
+        """ make an autorized request """
+        resp, content = self.client.request(
+            url,
+            method="POST",
+            body=query,
+            headers=http_headers
+        )
+        return resp, content
+
+
 
     def sql(self, sql, parse_json=True):
         """ executes sql in cartodb server
@@ -90,7 +106,7 @@ class CartoDB(object):
         """
         p = urllib.urlencode({'q': sql})
         url = self.resource_url + '?' + p
-        resp, content = self.req(url);
+        resp, content = self.post_req(self.resource_url, p);
         if resp['status'] == '200':
             if parse_json:
                 try:
