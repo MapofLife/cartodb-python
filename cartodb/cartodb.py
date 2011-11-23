@@ -93,10 +93,15 @@ class CartoDB(object):
         resp, content = self.req(url);
         if resp['status'] == '200':
             if parse_json:
-                return json.loads(content)
+                try:
+                    return json.loads(content)
+                except ValueError:
+                    raise CartoDBException("Server output not valid JSON: %s" % content)
             return content
         elif resp['status'] == '400':
             raise CartoDBException(json.loads(content)['error'])
+        elif resp['status'] == '414':
+            raise CartoDBException("HTTP 414 Request-URI too large. Server response: %s" % resp)
         elif resp['status'] == '500':
             raise CartoDBException('internal server error')
 
