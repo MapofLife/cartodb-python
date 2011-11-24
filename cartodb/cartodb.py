@@ -84,8 +84,11 @@ class CartoDB(object):
         )
         return resp, content
 
-    def post_req(self, url, query, http_headers=None):
-        http_headers = {'Content-type': 'application/x-www-form-urlencoded'}
+    def post_req(self, url, body, http_headers=None):
+        if http_headers is None:
+            http_headers = {}
+
+        http_headers['Content-type'] = 'application/x-www-form-urlencoded'
 
         print "Making a POST request"
 
@@ -93,7 +96,7 @@ class CartoDB(object):
         resp, content = self.client.request(
             url,
             method="POST",
-            body=query,
+            body=body,
             headers=http_headers
         )
         return resp, content
@@ -106,7 +109,7 @@ class CartoDB(object):
         """
         p = urllib.urlencode({'q': sql})
         url = self.resource_url + '?' + p
-        resp, content = self.post_req(self.resource_url, p);
+        resp, content = self.req(url);
         if resp['status'] == '200':
             if parse_json:
                 try:
@@ -122,6 +125,33 @@ class CartoDB(object):
             raise CartoDBException('internal server error')
 
         return None
+
+    def sql_post(self, sql, parse_json=True):
+        """ executes sql in cartodb server
+            set parse_json to False if you want raw reponse
+        """
+        p = urllib.urlencode({'sql': sql})
+        url = self.resource_url + '?' + p
+        print "Body: [%s]" % p
+        resp, content = self.post_req(self.resource_url, p);
+        print "Response: [%s] Content: [%s]" % (resp, content)
+        if resp['status'] == '200':
+            if parse_json:
+                try:
+                    return json.loads(content)
+                except ValueError:
+                    raise CartoDBException("Server output not valid JSON: %s" % content)
+            return content
+        elif resp['status'] == '400':
+            raise CartoDBException(json.loads(content)['error'])
+        elif resp['status'] == '414':
+            raise CartoDBException("HTTP 414 Request-URI too large. Server response: %s" % resp)
+        elif resp['status'] == '500':
+            raise CartoDBException('internal server error')
+
+        return None
+
+
 
 
 
