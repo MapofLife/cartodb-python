@@ -101,8 +101,6 @@ class CartoDB(object):
         )
         return resp, content
 
-
-
     def sql(self, sql, parse_json=True):
         """ executes sql in cartodb server
             set parse_json to False if you want raw reponse
@@ -130,11 +128,11 @@ class CartoDB(object):
         """ executes sql in cartodb server
             set parse_json to False if you want raw reponse
         """
-        p = urllib.urlencode({'sql': sql})
+        p = urllib.urlencode({'q': sql})
         url = self.resource_url + '?' + p
-        print "Body: [%s]" % p
+        # print "Body: [%s]" % p
         resp, content = self.post_req(self.resource_url, p);
-        print "Response: [%s] Content: [%s]" % (resp, content)
+        # print "Response: [%s] Content: [%s]" % (resp, content)
         if resp['status'] == '200':
             if parse_json:
                 try:
@@ -150,8 +148,4 @@ class CartoDB(object):
             raise CartoDBException('internal server error')
 
         return None
-
-
-
-
 

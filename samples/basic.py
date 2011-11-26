@@ -16,20 +16,19 @@ cdb = CartoDB(
     settings['cartodb_domain']
 )
 
-sql = "INSERT INTO %(table_name)s (name) VALUES ('%(name)s')" % {
-    'table_name': 'temp',
-    'name': 'Any name you choose (GET)'
-}
-sql = "SELECT current_database(), user"
+print "Which database and user are we running under with GET?"
+sql = "SELECT current_database(), user;"
+response = cdb.sql(sql)
+print "Response: " + response.__str__()
+print "\tDatabase: " + response['rows'][0]['current_database']
+print "\tUser: " + response['rows'][0]['current_user']
+print
 
-print "Sending GET request: " + sql
-print "Response: " + cdb.sql(sql, False).__str__()
+sql = "SELECT current_database(), user;"
 
-sql = "INSERT INTO %(table_name)s (name) VALUES ('%(name)s')" % {
-    'table_name': 'temp',
-    'name': 'Any name you choose (POST)'
-}
-sql = "SELECT current_database(), user"
-
+print "Which database and user are we running under with POST?"
 print "Sending POST request: " + sql
-print "Response: " + cdb.sql_post(sql).__str__()
+response = cdb.sql_post(sql)
+print "Response: " + response.__str__()
+print "\tDatabase: " + response['rows'][0]['current_database']
+print "\tUser: " + response['rows'][0]['current_user']
