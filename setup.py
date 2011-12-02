@@ -6,7 +6,7 @@ setup(name='cartodb',
       author_email = 'jsantana@vizzuality.com',
       description = 'client to access cartodb api',
       url='https://github.com/javisantana/cartodb',
-      version='0.2',
+      version='0.3-mol',
       packages=['cartodb'],
       requires = ['oauth2', 'simplejson']
 )
