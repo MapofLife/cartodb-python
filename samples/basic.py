@@ -13,7 +13,7 @@ cdb = CartoDB(
     settings['CONSUMER_SECRET'],
     settings['user'],
     settings['password'],
-    settings['cartodb_domain']
+    settings['domain']
 )
 
 print "Which database and user are we running under with GET?"

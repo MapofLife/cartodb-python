@@ -17,10 +17,11 @@
         password =  'XXXX'
         CONSUMER_KEY='XXXXXXXXXXXXXXXXXX'
         CONSUMER_SECRET='YYYYYYYYYYYYYYYYYYYYYYYYYY'
-        cartodb_domain = 'vitorino'
+        cartodb_domain = 'vitorino.cartodb.com'
         cl = CartoDB(CONSUMER_KEY, CONSUMER_SECRET, user, password, cartodb_domain)
         print cl.sql('select * from a')
 
+        
 """
 
 import urlparse
@@ -36,11 +37,10 @@ except ImportError:
 
 from oauth2 import Request
 
-REQUEST_TOKEN_URL = 'https://%(user)s.cartodb.com/oauth/request_token'
-ACCESS_TOKEN_URL = 'https://%(user)s.cartodb.com/oauth/access_token'
-AUTHORIZATION_URL = 'https://%(user)s.cartodb.com/oauth/authorize'
-RESOURCE_URL = 'https://%(user)s.cartodb.com/api/v1/sql'
-
+REQUEST_TOKEN_URL = 'https://%(domain)s/oauth/request_token'
+ACCESS_TOKEN_URL = 'https://%(domain)s/oauth/access_token'
+AUTHORIZATION_URL = 'https://%(domain)s/oauth/authorize'
+RESOURCE_URL = 'https://%(domain)s/api/v1/sql'
 
 class CartoDBException(Exception):
     pass
@@ -63,7 +63,7 @@ class CartoDB(object):
         params["x_auth_mode"] = 'client_auth'
 
         # Get Access Token
-        access_token_url = ACCESS_TOKEN_URL % {'user': cartodb_domain}
+        access_token_url = ACCESS_TOKEN_URL % {'domain': cartodb_domain}
         resp, token = client.request(access_token_url, method="POST", body=urllib.urlencode(params))
         if resp['status'] == '401':
             raise CartoDBException("CartoDB username or password invalid: access denied.")
@@ -71,7 +71,7 @@ class CartoDB(object):
         token = oauth.Token(access_token['oauth_token'], access_token['oauth_token_secret'])
 
         # prepare client
-        self.resource_url = RESOURCE_URL % {'user': cartodb_domain}
+        self.resource_url = RESOURCE_URL % {'domain': cartodb_domain}
         self.client = oauth.Client(consumer, token)
 
 
