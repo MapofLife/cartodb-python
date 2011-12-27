@@ -13,12 +13,13 @@ cdb = CartoDB(
     settings['CONSUMER_SECRET'],
     settings['user'],
     settings['password'],
-    settings['domain']
+    settings['user'],
+    host=settings['domain']
 )
 
 print "Which database and user are we running under with GET?"
 sql = "SELECT current_database(), user;"
-response = cdb.sql(sql)
+response = cdb.sql(sql, do_post=False)
 print "Response: " + response.__str__()
 print "\tDatabase: " + response['rows'][0]['current_database']
 print "\tUser: " + response['rows'][0]['current_user']
@@ -28,7 +29,7 @@ sql = "SELECT current_database(), user;"
 
 print "Which database and user are we running under with POST?"
 print "Sending POST request: " + sql
-response = cdb.sql_post(sql)
+response = cdb.sql(sql, do_post=True)
 print "Response: " + response.__str__()
 print "\tDatabase: " + response['rows'][0]['current_database']
 print "\tUser: " + response['rows'][0]['current_user']
