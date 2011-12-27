@@ -37,18 +37,19 @@ except ImportError:
 
 from oauth2 import Request
 
-REQUEST_TOKEN_URL = 'https://%(domain)s/oauth/request_token'
-ACCESS_TOKEN_URL = 'https://%(domain)s/oauth/access_token'
-AUTHORIZATION_URL = 'https://%(domain)s/oauth/authorize'
-RESOURCE_URL = 'https://%(domain)s/api/v1/sql'
+#REQUEST_TOKEN_URL = 'https://%(user)s.%(domain)s/oauth/request_token'
+ACCESS_TOKEN_URL = '%(protocol)s://%(user)s.%(domain)s/oauth/access_token'
+#AUTHORIZATION_URL = 'https://%(user)s.%(domain)s/oauth/authorize'
+RESOURCE_URL = '%(protocol)s://%(user)s.%(domain)s/api/v1/sql'
 
 class CartoDBException(Exception):
     pass
 
 class CartoDB(object):
     """ basic client to access cartodb api """
+    MAX_GET_QUERY_LEN = 2048
 
-    def __init__(self, key, secret, email, password, cartodb_domain):
+    def __init__(self, key, secret, email, password, cartodb_domain, host='cartodb.com', protocol='https'):
 
         self.consumer_key = key
         self.consumer_secret = secret
@@ -63,7 +64,7 @@ class CartoDB(object):
         params["x_auth_mode"] = 'client_auth'
 
         # Get Access Token
-        access_token_url = ACCESS_TOKEN_URL % {'domain': cartodb_domain}
+        access_token_url = ACCESS_TOKEN_URL % {'user': cartodb_domain, 'domain': host, 'protocol': protocol}
         resp, token = client.request(access_token_url, method="POST", body=urllib.urlencode(params))
         if resp['status'] == '401':
             raise CartoDBException("CartoDB username or password invalid: access denied.")
@@ -71,43 +72,33 @@ class CartoDB(object):
         token = oauth.Token(access_token['oauth_token'], access_token['oauth_token_secret'])
 
         # prepare client
-        self.resource_url = RESOURCE_URL % {'domain': cartodb_domain}
+        self.resource_url = RESOURCE_URL % {'user': cartodb_domain, 'domain': host, 'protocol': protocol}
         self.client = oauth.Client(consumer, token)
 
 
-    def req(self, url, http_headers=None):
+    def req(self, url, http_method="GET", http_headers=None, body=''):
         """ make an autorized request """
         resp, content = self.client.request(
             url,
-            method="GET",
-            headers=http_headers
-        )
-        return resp, content
-
-    def post_req(self, url, body, http_headers=None):
-        if http_headers is None:
-            http_headers = {}
-
-        http_headers['Content-type'] = 'application/x-www-form-urlencoded'
-
-        print "Making a POST request"
-
-        """ make an autorized request """
-        resp, content = self.client.request(
-            url,
-            method="POST",
             body=body,
+            method=http_method,
             headers=http_headers
         )
         return resp, content
 
-    def sql(self, sql, parse_json=True):
+    def sql(self, sql, parse_json=True, do_post=True):
         """ executes sql in cartodb server
             set parse_json to False if you want raw reponse
         """
         p = urllib.urlencode({'q': sql})
-        url = self.resource_url + '?' + p
-        resp, content = self.req(url);
+        url = self.resource_url
+        # depending on query size do a POST or GET
+        if len(sql) < self.MAX_GET_QUERY_LEN and not do_post:
+            url = url + '?' + p
+            resp, content = self.req(url);
+        else:
+            resp, content = self.req(url, 'POST', body=p);
+
         if resp['status'] == '200':
             if parse_json:
                 try:
