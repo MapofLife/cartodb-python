@@ -14,7 +14,9 @@ cdb = CartoDB(
     settings['user'],
     settings['password'],
     settings['user'],
-    host=settings['domain']
+    host=settings['domain'],
+    protocol='http',
+    access_token_url=settings['access_token_url']
 )
 
 print "Which database and user are we running under with GET?"

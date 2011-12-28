@@ -49,7 +49,7 @@ class CartoDB(object):
     """ basic client to access cartodb api """
     MAX_GET_QUERY_LEN = 2048
 
-    def __init__(self, key, secret, email, password, cartodb_domain, host='cartodb.com', protocol='https'):
+    def __init__(self, key, secret, email, password, cartodb_domain, host='cartodb.com', protocol='https', access_token_url=ACCESS_TOKEN_URL):
 
         self.consumer_key = key
         self.consumer_secret = secret
@@ -64,7 +64,7 @@ class CartoDB(object):
         params["x_auth_mode"] = 'client_auth'
 
         # Get Access Token
-        access_token_url = ACCESS_TOKEN_URL % {'user': cartodb_domain, 'domain': host, 'protocol': protocol}
+        access_token_url = access_token_url % {'user': cartodb_domain, 'domain': host, 'protocol': protocol}
         resp, token = client.request(access_token_url, method="POST", body=urllib.urlencode(params))
         if resp['status'] == '401':
             raise CartoDBException("CartoDB username or password invalid: access denied.")
